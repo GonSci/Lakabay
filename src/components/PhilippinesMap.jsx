@@ -19,6 +19,8 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
   const [startAddress, setStartAddress] = useState('');
   const [endAddress, setEndAddress] = useState('');
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [transportMode, setTransportMode] = useState('driving'); // driving, walking, cycling, transit
+  const [routeDetails, setRouteDetails] = useState(null);
 
   useEffect(() => {
     // Load Leaflet CSS
@@ -560,10 +562,44 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
       window.L.latLng(endCoords.lat, endCoords.lng)
     ];
 
+    // Transport mode profiles with realistic adjustments for Philippines
+    const modeProfiles = {
+      driving: {
+        router: 'car',
+        color: '#667eea',
+        icon: '🚗',
+        label: 'Car',
+        speedMultiplier: 0.7 // Traffic factor in PH
+      },
+      walking: {
+        router: 'foot',
+        color: '#10b981',
+        icon: '🚶',
+        label: 'Walking',
+        speedMultiplier: 0.9
+      },
+      cycling: {
+        router: 'bike',
+        color: '#f59e0b',
+        icon: '🚴',
+        label: 'Cycling',
+        speedMultiplier: 0.85
+      },
+      transit: {
+        router: 'car',
+        color: '#8b5cf6',
+        icon: '🚌',
+        label: 'Public Transit',
+        speedMultiplier: 0.5 // Slower due to stops and transfers
+      }
+    };
+
+    const currentMode = modeProfiles[transportMode] || modeProfiles.driving;
+
     const routingControl = window.L.Routing.control({
       waypoints: waypoints,
       routeWhileDragging: false,
-      showAlternatives: false,
+      showAlternatives: true,
       addWaypoints: false,
       fitSelectedRoutes: true,
       show: false,
@@ -571,14 +607,29 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
       lineOptions: {
         styles: [
           {
-            color: '#667eea',
+            color: currentMode.color,
             opacity: 0.8,
             weight: 6
           }
-        ]
+        ],
+        extendToWaypoints: true,
+        missingRouteTolerance: 0
       },
       router: window.L.Routing.osrmv1({
-        serviceUrl: 'https://router.project-osrm.org/route/v1'
+        serviceUrl: `https://router.project-osrm.org/route/v1`,
+        profile: currentMode.router
+      }),
+      formatter: new window.L.Routing.Formatter({
+        units: 'metric',
+        unitNames: {
+          meters: 'm',
+          kilometers: 'km',
+          yards: 'yd',
+          miles: 'mi',
+          hours: 'hr',
+          minutes: 'min',
+          seconds: 'sec'
+        }
       })
     }).addTo(mapInstanceRef.current);
 
@@ -587,34 +638,123 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
     // Listen for route found event
     routingControl.on('routesfound', (e) => {
       const routes = e.routes;
-      const summary = routes[0].summary;
+      const mainRoute = routes[0];
+      const summary = mainRoute.summary;
       
-      const distanceKm = (summary.totalDistance / 1000).toFixed(2);
-      const totalMinutes = Math.round(summary.totalTime / 60);
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
+      // Calculate realistic travel times for Philippines
+      const distanceKm = (summary.totalDistance / 1000);
+      const baseMinutes = summary.totalTime / 60;
+      const adjustedMinutes = Math.round(baseMinutes / currentMode.speedMultiplier);
+      
+      // Calculate different mode times
+      const walkingTime = calculateTravelTime(distanceKm, 'walking');
+      const cyclingTime = calculateTravelTime(distanceKm, 'cycling');
+      const drivingTime = calculateTravelTime(distanceKm, 'driving');
+      const transitTime = calculateTravelTime(distanceKm, 'transit');
+      
+      // Get turn-by-turn instructions
+      const instructions = mainRoute.instructions.map(inst => ({
+        text: inst.text,
+        distance: (inst.distance / 1000).toFixed(2) + ' km',
+        time: Math.round(inst.time / 60) + ' min',
+        type: inst.type,
+        road: inst.road
+      }));
+      
+      // Calculate estimated costs (Philippines rates)
+      const costs = calculateTransportCosts(distanceKm);
+      
+      setRouteDetails({
+        distance: distanceKm.toFixed(2),
+        currentMode: currentMode,
+        currentTime: adjustedMinutes,
+        modes: {
+          walking: walkingTime,
+          cycling: cyclingTime,
+          driving: drivingTime,
+          transit: transitTime
+        },
+        costs: costs,
+        instructions: instructions,
+        alternatives: routes.length
+      });
+      
+      const hours = Math.floor(adjustedMinutes / 60);
+      const minutes = adjustedMinutes % 60;
       
       let timeString = '';
       if (hours > 0) {
-        timeString = `${hours} hour${hours > 1 ? 's' : ''}`;
-        if (minutes > 0) {
-          timeString += ` ${minutes} min`;
-        }
+        timeString = `${hours}h ${minutes}m`;
       } else {
-        timeString = `${minutes} minutes`;
+        timeString = `${minutes} min`;
       }
       
       setRouteInfo({
-        distance: distanceKm,
+        distance: distanceKm.toFixed(2),
         duration: timeString,
-        totalMinutes: totalMinutes
+        totalMinutes: adjustedMinutes,
+        mode: currentMode.label
       });
     });
 
     routingControl.on('routingerror', (e) => {
       console.error('Routing error:', e);
-      alert('Unable to calculate route. Please try different locations.');
+      alert('Unable to calculate route. Please try different locations or transport mode.');
     });
+  };
+
+  // Calculate realistic travel times for Philippines
+  const calculateTravelTime = (distanceKm, mode) => {
+    const speeds = {
+      walking: 4, // km/h (slower due to heat/terrain)
+      cycling: 12, // km/h (considering traffic/road conditions)
+      driving: 25, // km/h (Manila traffic average)
+      transit: 15  // km/h (including stops and transfers)
+    };
+    
+    const baseTime = (distanceKm / speeds[mode]) * 60; // in minutes
+    
+    // Add waiting/transfer time for transit
+    const waitingTime = mode === 'transit' ? 15 : 0;
+    
+    const totalMinutes = Math.round(baseTime + waitingTime);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    return {
+      totalMinutes,
+      display: hours > 0 ? `${hours}h ${minutes}m` : `${minutes} min`,
+      hours,
+      minutes
+    };
+  };
+
+  // Calculate transport costs (Philippines rates 2024)
+  const calculateTransportCosts = (distanceKm) => {
+    return {
+      walking: { amount: 0, display: 'Free' },
+      cycling: { amount: 0, display: 'Free' },
+      driving: {
+        amount: Math.round(distanceKm * 15), // ₱15/km (fuel + toll estimate)
+        display: `₱${Math.round(distanceKm * 15)}`
+      },
+      grab: {
+        amount: Math.round(40 + (distanceKm * 14)), // Base + per km
+        display: `₱${Math.round(40 + (distanceKm * 14))}`
+      },
+      taxi: {
+        amount: Math.round(40 + (distanceKm * 13.5)), // Base fare + per km
+        display: `₱${Math.round(40 + (distanceKm * 13.5))}`
+      },
+      jeepney: {
+        amount: distanceKm <= 4 ? 13 : 13 + Math.ceil((distanceKm - 4) / 2) * 2,
+        display: `₱${distanceKm <= 4 ? 13 : 13 + Math.ceil((distanceKm - 4) / 2) * 2}`
+      },
+      bus: {
+        amount: Math.round(Math.min(15 + (distanceKm * 2), 50)),
+        display: `₱${Math.round(Math.min(15 + (distanceKm * 2), 50))}`
+      }
+    };
   };
 
   const toggleRoutingMode = () => {
@@ -649,9 +789,11 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
     setStartLocation(null);
     setEndLocation(null);
     setRouteInfo(null);
+    setRouteDetails(null);
     setUseCurrentLocation(false);
     setStartAddress('');
     setEndAddress('');
+    setTransportMode('driving');
   };
 
   return (
@@ -669,6 +811,42 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
           <div className="routing-controls">
             <div className="routing-instructions">
               <h4>📍 Plan Your Route</h4>
+              
+              {/* Transport Mode Selection */}
+              <div className="transport-modes">
+                <button
+                  className={`transport-btn ${transportMode === 'driving' ? 'active' : ''}`}
+                  onClick={() => setTransportMode('driving')}
+                  title="Car / Private Vehicle"
+                >
+                  <span className="transport-icon">🚗</span>
+                  <span className="transport-label">Car</span>
+                </button>
+                <button
+                  className={`transport-btn ${transportMode === 'walking' ? 'active' : ''}`}
+                  onClick={() => setTransportMode('walking')}
+                  title="Walking"
+                >
+                  <span className="transport-icon">🚶</span>
+                  <span className="transport-label">Walk</span>
+                </button>
+                <button
+                  className={`transport-btn ${transportMode === 'cycling' ? 'active' : ''}`}
+                  onClick={() => setTransportMode('cycling')}
+                  title="Bicycle"
+                >
+                  <span className="transport-icon">🚴</span>
+                  <span className="transport-label">Bike</span>
+                </button>
+                <button
+                  className={`transport-btn ${transportMode === 'transit' ? 'active' : ''}`}
+                  onClick={() => setTransportMode('transit')}
+                  title="Public Transport (Jeepney, Bus, etc.)"
+                >
+                  <span className="transport-icon">🚌</span>
+                  <span className="transport-label">Transit</span>
+                </button>
+              </div>
               
               <div className="address-inputs">
                 <div className="input-group">
@@ -735,24 +913,116 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
                 </button>
               </div>
               
-              {routeInfo && (
-                <div className="route-summary">
-                  <div className="route-info-card">
-                    <div className="route-stat">
-                      <span className="route-icon">📏</span>
-                      <div>
-                        <div className="route-label">Distance</div>
-                        <div className="route-value">{routeInfo.distance} km</div>
-                      </div>
+              {routeDetails && (
+                <div className="route-summary-enhanced">
+                  <div className="route-overview">
+                    <div className="route-header">
+                      <span className="route-mode-icon">{routeDetails.currentMode.icon}</span>
+                      <h5>{routeDetails.currentMode.label}</h5>
                     </div>
-                    <div className="route-stat">
-                      <span className="route-icon">⏱️</span>
-                      <div>
-                        <div className="route-label">Est. Travel Time</div>
-                        <div className="route-value">{routeInfo.duration}</div>
+                    <div className="route-main-stats">
+                      <div className="stat-large">
+                        <span className="stat-icon">📏</span>
+                        <div className="stat-content">
+                          <span className="stat-value">{routeDetails.distance}</span>
+                          <span className="stat-unit">km</span>
+                        </div>
+                      </div>
+                      <div className="stat-divider"></div>
+                      <div className="stat-large">
+                        <span className="stat-icon">⏱️</span>
+                        <div className="stat-content">
+                          <span className="stat-value">{routeDetails.currentTime}</span>
+                          <span className="stat-unit">min</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Alternative Travel Times */}
+                  <div className="travel-alternatives">
+                    <h6>🕐 Travel Time Comparison</h6>
+                    <div className="alt-modes-grid">
+                      <div className={`alt-mode ${transportMode === 'walking' ? 'active' : ''}`}>
+                        <span className="alt-icon">🚶</span>
+                        <div className="alt-info">
+                          <span className="alt-label">Walking</span>
+                          <span className="alt-time">{routeDetails.modes.walking.display}</span>
+                        </div>
+                      </div>
+                      <div className={`alt-mode ${transportMode === 'cycling' ? 'active' : ''}`}>
+                        <span className="alt-icon">🚴</span>
+                        <div className="alt-info">
+                          <span className="alt-label">Cycling</span>
+                          <span className="alt-time">{routeDetails.modes.cycling.display}</span>
+                        </div>
+                      </div>
+                      <div className={`alt-mode ${transportMode === 'driving' ? 'active' : ''}`}>
+                        <span className="alt-icon">🚗</span>
+                        <div className="alt-info">
+                          <span className="alt-label">Driving</span>
+                          <span className="alt-time">{routeDetails.modes.driving.display}</span>
+                        </div>
+                      </div>
+                      <div className={`alt-mode ${transportMode === 'transit' ? 'active' : ''}`}>
+                        <span className="alt-icon">🚌</span>
+                        <div className="alt-info">
+                          <span className="alt-label">Transit</span>
+                          <span className="alt-time">{routeDetails.modes.transit.display}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Estimated Costs */}
+                  <div className="cost-estimates">
+                    <h6>💰 Estimated Costs</h6>
+                    <div className="cost-grid">
+                      <div className="cost-item">
+                        <span className="cost-icon">🚗</span>
+                        <span className="cost-label">Private Car</span>
+                        <span className="cost-value">{routeDetails.costs.driving.display}</span>
+                      </div>
+                      <div className="cost-item">
+                        <span className="cost-icon">🚕</span>
+                        <span className="cost-label">Grab/Taxi</span>
+                        <span className="cost-value">{routeDetails.costs.grab.display}</span>
+                      </div>
+                      <div className="cost-item">
+                        <span className="cost-icon">🚌</span>
+                        <span className="cost-label">Bus</span>
+                        <span className="cost-value">{routeDetails.costs.bus.display}</span>
+                      </div>
+                      <div className="cost-item">
+                        <span className="cost-icon">🚐</span>
+                        <span className="cost-label">Jeepney</span>
+                        <span className="cost-value">{routeDetails.costs.jeepney.display}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Turn-by-turn directions */}
+                  {routeDetails.instructions && routeDetails.instructions.length > 0 && (
+                    <div className="turn-by-turn">
+                      <h6>🗺️ Turn-by-Turn Directions</h6>
+                      <div className="directions-list">
+                        {routeDetails.instructions.slice(0, 5).map((step, index) => (
+                          <div key={index} className="direction-step">
+                            <span className="step-number">{index + 1}</span>
+                            <div className="step-content">
+                              <p className="step-instruction">{step.text}</p>
+                              <span className="step-distance">{step.distance}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {routeDetails.instructions.length > 5 && (
+                          <p className="more-steps">
+                            +{routeDetails.instructions.length - 5} more steps
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               
