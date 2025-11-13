@@ -27,6 +27,221 @@
   background: #94a3b8;
 }
 
+/* Compact Mode for Sidebar */
+.user-profile.compact {
+  border-right: none;
+}
+
+.user-profile.compact .profile-header {
+  padding: 12px 14px;
+  gap: 10px;
+}
+
+.user-profile.compact .avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 1.3rem;
+}
+
+.user-profile.compact .profile-info h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.user-profile.compact .profile-subtitle {
+  font-size: 0.75rem;
+}
+
+.user-profile.compact .stats-grid {
+  display: none;
+}
+
+.user-profile.compact .badges-section {
+  padding: 12px 12px !important;
+}
+
+.user-profile.compact .section-header {
+  margin-bottom: 10px;
+}
+
+.user-profile.compact .section-header h4 {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.user-profile.compact .badges-grid {
+  max-width: 100%;
+  gap: 8px;
+}
+
+.user-profile.compact .badge-card {
+  padding: 8px;
+  gap: 8px;
+}
+
+.user-profile.compact .badge-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 1.2rem;
+}
+
+.user-profile.compact .badge-name {
+  font-size: 0.75rem;
+}
+
+.user-profile.compact .badge-progress {
+  gap: 2px;
+}
+
+.user-profile.compact .progress-text {
+  font-size: 0.65rem;
+}
+
+.user-profile.compact .checklist-title {
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  margin-top: 12px;
+}
+
+.user-profile.compact .add-checklist-btn {
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  width: calc(100% - 16px);
+  margin: 0 8px;
+}
+
+.user-profile.compact .checklist-items {
+  max-width: calc(100% - 16px);
+  margin-left: 8px;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.user-profile.compact .checklist-item {
+  width: auto;
+}
+
+.user-profile.compact .checklist-item-header {
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.user-profile.compact .checklist-checkbox {
+  width: 16px;
+  height: 16px;
+}
+
+.user-profile.compact .checklist-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+}
+
+.user-profile.compact .checklist-text {
+  font-size: 0.8rem;
+}
+
+.user-profile.compact .checklist-expand-btn,
+.user-profile.compact .checklist-delete-btn {
+  padding: 2px 4px;
+  font-size: 0.9rem;
+}
+
+.user-profile.compact .checklist-notes-input {
+  font-size: 0.8rem;
+  padding: 8px;
+  min-height: 60px;
+}
+
+.user-profile.compact .templates-section {
+  width: calc(100% - 16px);
+  margin: 10px 8px;
+  padding: 10px;
+}
+
+.user-profile.compact .templates-header-title {
+  font-size: 0.8rem;
+}
+
+.user-profile.compact .template-item {
+  padding: 8px;
+  gap: 6px;
+}
+
+.user-profile.compact .template-name {
+  font-size: 0.8rem;
+}
+
+.user-profile.compact .template-meta {
+  font-size: 0.75rem;
+}
+
+.user-profile.compact .templates-action-btn {
+  padding: 5px 8px;
+  font-size: 0.7rem;
+}
+
+.user-profile.compact .preloaded-templates {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.user-profile.compact .preloaded-title {
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.user-profile.compact .preloaded-grid {
+  gap: 6px;
+}
+
+.user-profile.compact .preloaded-template-btn {
+  padding: 10px 8px;
+  gap: 4px;
+}
+
+.user-profile.compact .preloaded-icon {
+  font-size: 1.4rem;
+}
+
+.user-profile.compact .preloaded-name {
+  font-size: 0.7rem;
+}
+
+.user-profile.compact .next-badge-hint {
+  display: none;
+}
+
+.user-profile.compact .ai-toggle-btn {
+  margin: 10px 8px;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+}
+
+.user-profile.compact .profile-section {
+  padding: 10px 8px !important;
+  margin: 10px 0;
+}
+
+.user-profile.compact .profile-section h4 {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.user-profile.compact .location-list {
+  gap: 6px;
+}
+
+.user-profile.compact .location-item {
+  padding: 6px 8px;
+  font-size: 0.8rem;
+}
+
+.user-profile.compact .empty-state {
+  font-size: 0.75rem;
+  padding: 8px;
+}
+
 /* Profile Header */
 .profile-header {
   display: flex;
@@ -802,6 +1017,215 @@
   flex-shrink: 0;
 }
 
+/* Checklist Controls */
+.checklist-controls {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.checklist-controls button {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* Unified Templates Section */
+.templates-section {
+  margin-top: 16px;
+  padding: 14px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  width: 32.7rem;
+}
+
+.templates-section:hover {
+  border-color: #cbd5e1;
+}
+
+.templates-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.templates-header-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.templates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.template-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  gap: 10px;
+}
+
+.template-item:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.template-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.template-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.template-meta {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.template-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.templates-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.templates-action-btn .btn-icon {
+  font-size: 0.9rem;
+}
+
+.templates-action-btn.save-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.templates-action-btn.save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.templates-action-btn.load-btn {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white;
+}
+
+.templates-action-btn.load-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+}
+
+.templates-action-btn.delete-btn {
+  background: #f5f5f5;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+}
+
+.templates-action-btn.delete-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.templates-action-btn.delete-btn:active {
+  transform: scale(0.95);
+}
+
+.templates-empty {
+  padding: 16px;
+  text-align: center;
+  background: white;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.templates-empty p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.save-checklist-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.save-checklist-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.save-checklist-btn:active {
+  transform: translateY(0);
+}
+
+.save-checklist-btn .btn-icon {
+  font-size: 1rem;
+}
+
+.save-checklist-btn .btn-text {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .save-checklist-btn .btn-text {
+    display: inline;
+  }
+}
+
 .next-badge-hint {
   display: none;
 }
@@ -1346,4 +1770,69 @@
   .stat-label {
     font-size: 0.65rem;
   }
+}
+
+/* Preloaded Templates */
+.preloaded-templates {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.preloaded-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preloaded-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.preloaded-template-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 10px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.preloaded-template-btn:hover {
+  border-color: #667eea;
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.preloaded-template-btn:active {
+  transform: translateY(0);
+}
+
+.preloaded-icon {
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preloaded-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
 }
