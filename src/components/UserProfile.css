@@ -823,6 +823,7 @@
   border: 1.5px solid #e2e8f0;
   border-radius: 10px;
   transition: all 0.3s ease;
+  width: 32.7rem;
 }
 
 .templates-section:hover {
@@ -1554,4 +1555,69 @@
   .stat-label {
     font-size: 0.65rem;
   }
+}
+
+/* Preloaded Templates */
+.preloaded-templates {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.preloaded-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preloaded-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.preloaded-template-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 10px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.preloaded-template-btn:hover {
+  border-color: #667eea;
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.preloaded-template-btn:active {
+  transform: translateY(0);
+}
+
+.preloaded-icon {
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preloaded-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
 }

@@ -28,6 +28,104 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
       return [];
     }
   });
+  
+  // Track the last loaded preloaded template ID (for replacing logic)
+  const [lastPreloadedTemplateId, setLastPreloadedTemplateId] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lastPreloadedTemplateId');
+      return saved ? saved : null;
+    } catch (error) {
+      return null;
+    }
+  });
+
+  // Preloaded templates for different occasions
+  const preloadedTemplates = [
+    {
+      id: 'beach',
+      name: 'Beach Trip',
+      icon: '🏖️',
+      items: [
+        { name: 'Sunscreen', icon: '☀️', note: 'SPF 50+' },
+        { name: 'Swimsuit', icon: '👙', note: '' },
+        { name: 'Beach Towel', icon: '🏖️', note: '' },
+        { name: 'Water Bottle', icon: '💧', note: 'Stay hydrated' },
+        { name: 'Flip Flops', icon: '👡', note: '' },
+        { name: 'Hat/Cap', icon: '🧢', note: 'Sun protection' },
+        { name: 'Sunglasses', icon: '😎', note: '' }
+      ]
+    },
+    {
+      id: 'hiking',
+      name: 'Hiking Adventure',
+      icon: '⛰️',
+      items: [
+        { name: 'Hiking Boots', icon: '👢', note: 'Comfortable and broken in' },
+        { name: 'Water Bottle', icon: '💧', note: '2-3 liters' },
+        { name: 'Trail Snacks', icon: '🍎', note: 'Energy bars, nuts' },
+        { name: 'First Aid Kit', icon: '🩹', note: 'Bandages, pain relief' },
+        { name: 'Weather Jacket', icon: '🧥', note: 'Waterproof' },
+        { name: 'Backpack', icon: '🎒', note: '20-30L capacity' },
+        { name: 'Map/GPS', icon: '🗺️', note: 'Navigation' }
+      ]
+    },
+    {
+      id: 'camping',
+      name: 'Camping Trip',
+      icon: '⛺',
+      items: [
+        { name: 'Tent', icon: '⛺', note: '' },
+        { name: 'Sleeping Bag', icon: '🛏️', note: 'Appropriate for season' },
+        { name: 'Camping Stove', icon: '🔥', note: 'Fuel included' },
+        { name: 'Cookware', icon: '🍳', note: 'Pots, pans, utensils' },
+        { name: 'Headlamp/Flashlight', icon: '🔦', note: 'Extra batteries' },
+        { name: 'Camping Mat', icon: '📋', note: 'Insulation' },
+        { name: 'Firewood', icon: '🪵', note: 'Dry wood' }
+      ]
+    },
+    {
+      id: 'city',
+      name: 'City Exploration',
+      icon: '🏙️',
+      items: [
+        { name: 'Comfortable Shoes', icon: '👟', note: 'For walking' },
+        { name: 'Camera', icon: '📸', note: 'Capture memories' },
+        { name: 'Transit Pass', icon: '🎫', note: 'Bus/metro tickets' },
+        { name: 'City Map/App', icon: '🗺️', note: 'Navigation' },
+        { name: 'Portable Charger', icon: '🔋', note: 'Phone battery' },
+        { name: 'Light Jacket', icon: '🧥', note: 'Layering' },
+        { name: 'Tourist Guide', icon: '📖', note: 'Attractions list' }
+      ]
+    },
+    {
+      id: 'business',
+      name: 'Business Trip',
+      icon: '💼',
+      items: [
+        { name: 'Business Attire', icon: '👔', note: 'Formal clothes' },
+        { name: 'Laptop', icon: '💻', note: 'And charger' },
+        { name: 'Presentation Materials', icon: '📊', note: 'Printed copies' },
+        { name: 'Business Cards', icon: '🎫', note: '' },
+        { name: 'Professional Bag', icon: '👜', note: 'For documents' },
+        { name: 'Notebook', icon: '📓', note: 'Meeting notes' },
+        { name: 'Dress Shoes', icon: '👞', note: '' }
+      ]
+    },
+    {
+      id: 'island',
+      name: 'Island Hopping',
+      icon: '🏝️',
+      items: [
+        { name: 'Waterproof Bag', icon: '🎒', note: 'Electronics protection' },
+        { name: 'Snorkel Gear', icon: '🤿', note: 'Mask and fins' },
+        { name: 'Reef-Safe Sunscreen', icon: '☀️', note: 'Coral-friendly' },
+        { name: 'Quick Dry Clothes', icon: '👕', note: '' },
+        { name: 'Water Shoes', icon: '👟', note: 'Reef protection' },
+        { name: 'Underwater Camera', icon: '📷', note: 'GoPro or equivalent' },
+        { name: 'Dry Pouch', icon: '🧳', note: 'For valuables' }
+      ]
+    }
+  ];
 
   // Save checklists to localStorage whenever they change
   useEffect(() => {
@@ -41,6 +139,14 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
     localStorage.setItem('savedChecklistTemplates', JSON.stringify(savedChecklistTemplates));
     console.log('Templates saved:', savedChecklistTemplates);
   }, [savedChecklistTemplates]);
+
+  // Save last preloaded template ID to localStorage
+  useEffect(() => {
+    if (lastPreloadedTemplateId) {
+      localStorage.setItem('lastPreloadedTemplateId', lastPreloadedTemplateId);
+    }
+  }, [lastPreloadedTemplateId]);
+
   // Calculate gamification stats
   const stats = useMemo(() => {
     const visitedCount = profile.beenThere.length;
@@ -161,6 +267,9 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
         console.log('Updated checklists:', updated);
         return updated;
       });
+      // Clear preloaded template tracking so next template appends instead
+      setLastPreloadedTemplateId(null);
+      localStorage.removeItem('lastPreloadedTemplateId');
       handleCloseModal();
     }
   };
@@ -237,6 +346,30 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
   const handleCloseSaveModal = () => {
     setShowSaveChecklistModal(false);
     setSaveChecklistName('');
+  };
+
+  // Handle load preloaded template
+  const handleLoadPreloadedTemplate = (template) => {
+    const newItems = template.items.map(item => ({
+      id: Date.now() + Math.random(),
+      ...item,
+      completed: false
+    }));
+    
+    // If checklist is empty OR we're switching from one preloaded template to another
+    // (i.e., all current items are from a preloaded template), replace instead of append
+    if (userChecklists.length === 0 || lastPreloadedTemplateId) {
+      // Replace the entire checklist
+      setUserChecklists(newItems);
+      console.log('Preloaded template loaded (replaced):', template.name);
+    } else {
+      // Append to existing checklist (user has manually added items)
+      setUserChecklists(prev => [...prev, ...newItems]);
+      console.log('Preloaded template loaded (appended):', template.name);
+    }
+    
+    // Update the last loaded preloaded template ID
+    setLastPreloadedTemplateId(template.id);
   };
 
   return (
@@ -407,6 +540,24 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
                   <p>No saved templates yet. Create one to get started!</p>
                 </div>
               )}
+
+              {/* Preloaded Templates */}
+              <div className="preloaded-templates">
+                <h5 className="preloaded-title">🎯 Quick Start Templates</h5>
+                <div className="preloaded-grid">
+                  {preloadedTemplates.map(template => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleLoadPreloadedTemplate(template)}
+                      className="preloaded-template-btn"
+                      title={`Load ${template.name} template`}
+                    >
+                      <span className="preloaded-icon">{template.icon}</span>
+                      <span className="preloaded-name">{template.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
