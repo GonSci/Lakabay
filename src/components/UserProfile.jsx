@@ -1,7 +1,27 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import './UserProfile.css';
 
-const UserProfile = ({ profile, onToggleAI }) => {
+const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
+  const [showAddChecklistModal, setShowAddChecklistModal] = useState(false);
+  const [checklistForm, setChecklistForm] = useState({ name: '', icon: '✓' });
+  const [expandedChecklistId, setExpandedChecklistId] = useState(null);
+  const [userChecklists, setUserChecklists] = useState(() => {
+    // Initialize state from localStorage immediately
+    try {
+      const saved = localStorage.getItem('userChecklists');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading checklists:', error);
+      return [];
+    }
+  });
+
+  // Save checklists to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('userChecklists', JSON.stringify(userChecklists));
+    console.log('Checklists saved:', userChecklists);
+    console.log('LocalStorage content:', localStorage.getItem('userChecklists'));
+  }, [userChecklists]);
   // Calculate gamification stats
   const stats = useMemo(() => {
     const visitedCount = profile.beenThere.length;
@@ -83,8 +103,79 @@ const UserProfile = ({ profile, onToggleAI }) => {
   const unlockedBadges = badges.filter(b => b.unlocked);
   const nextBadge = badges.find(b => !b.unlocked);
 
+  // Icon options for checklist
+  const iconOptions = ['✓', '📋', '📝', '✈️', '🎒', '🗺️', '📅', '🏨', '🎫', '📕', '🛡️', '⭐'];
+
+  // Handle add checklist button click
+  const handleAddChecklistClick = () => {
+    setShowAddChecklistModal(true);
+  };
+
+  // Handle modal close
+  const handleCloseModal = () => {
+    setShowAddChecklistModal(false);
+    setChecklistForm({ name: '', icon: '✓' });
+  };
+
+  // Handle form input change
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setChecklistForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle icon selection
+  const handleIconSelect = (icon) => {
+    setChecklistForm(prev => ({ ...prev, icon }));
+  };
+
+  // Handle form submission
+  const handleAddChecklist = () => {
+    if (checklistForm.name.trim()) {
+      const newChecklist = {
+        id: Date.now(),
+        ...checklistForm,
+        completed: false
+      };
+      console.log('Adding new checklist:', newChecklist);
+      setUserChecklists(prev => {
+        const updated = [...prev, newChecklist];
+        console.log('Updated checklists:', updated);
+        return updated;
+      });
+      handleCloseModal();
+    }
+  };
+
+  // Handle checkbox toggle
+  const handleToggleChecklistItem = (id) => {
+    setUserChecklists(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, completed: !item.completed } : item
+      )
+    );
+  };
+
+  // Handle delete checklist item
+  const handleDeleteChecklistItem = (id) => {
+    setUserChecklists(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Handle expand/collapse checklist
+  const handleToggleExpand = (id) => {
+    setExpandedChecklistId(expandedChecklistId === id ? null : id);
+  };
+
+  // Handle note update
+  const handleUpdateNote = (id, note) => {
+    setUserChecklists(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, note } : item
+      )
+    );
+  };
+
   return (
-    <div className="user-profile">
+    <div className={`user-profile ${expanded ? 'expanded' : ''}`}>
       <div className="profile-header">
         <div className="avatar">👤</div>
         <div className="profile-info">
@@ -122,45 +213,151 @@ const UserProfile = ({ profile, onToggleAI }) => {
       <div className="profile-section badges-section">
         <div className="section-header">
           <h4>🏆 Achievements</h4>
-          <span className="badge-count">{unlockedBadges.length}/{badges.length}</span>
         </div>
         
-        <div className="badges-grid">
-          {badges.map(badge => (
-            <div 
-              key={badge.id} 
-              className={`badge-card ${badge.unlocked ? 'unlocked' : 'locked'}`}
-              title={badge.description}
-            >
-              <div className="badge-icon">{badge.icon}</div>
-              <div className="badge-info">
-                <span className="badge-name">{badge.name}</span>
-                {!badge.unlocked && (
-                  <div className="badge-progress">
-                    <div className="progress-bar">
-                      <div 
-                        className="progress-fill"
-                        style={{ width: `${(badge.current / badge.requirement) * 100}%` }}
-                      />
+        <div className="badges-column">
+          <div className="badges-grid">
+            {badges.map(badge => (
+              <div 
+                key={badge.id} 
+                className={`badge-card ${badge.unlocked ? 'unlocked' : 'locked'}`}
+                title={badge.description}
+              >
+                <div className="badge-icon">{badge.icon}</div>
+                <div className="badge-info">
+                  <span className="badge-name">{badge.name}</span>
+                  {!badge.unlocked && (
+                    <div className="badge-progress">
+                      <div className="progress-bar">
+                        <div 
+                          className="progress-fill"
+                          style={{ width: `${(badge.current / badge.requirement) * 100}%` }}
+                        />
+                      </div>
+                      <span className="progress-text">{badge.current}/{badge.requirement}</span>
                     </div>
-                    <span className="progress-text">{badge.current}/{badge.requirement}</span>
-                  </div>
-                )}
+                  )}
+                </div>
+                {badge.unlocked && <div className="badge-checkmark">✓</div>}
               </div>
-              {badge.unlocked && <div className="badge-checkmark">✓</div>}
-            </div>
-          ))}
+            ))}
+          </div>
+          <span className="badge-count">{unlockedBadges.length}/{badges.length}</span>
         </div>
 
-        {nextBadge && (
-          <div className="next-badge-hint">
-            <span className="hint-icon">🎯</span>
-            <span className="hint-text">
-              Next: {nextBadge.name} - {nextBadge.description}
-            </span>
+        {/* Right side placeholder for future content */}
+        <div className="badges-right-column">
+          {/* Checklist Section */}
+          <div className="checklist-container">
+            <h4 className="checklist-title">✓ Travel Checklist</h4>
+            <button onClick={handleAddChecklistClick} className="add-checklist-btn">
+              <span className="btn-icon">+</span>
+              <span className="btn-text">Add Checklist Item</span>
+            </button>
+            {/* Display added checklists */}
+            <div className="checklist-items">
+              {userChecklists.map(item => (
+                <div key={item.id} className={`checklist-item ${item.completed ? 'completed' : ''} ${expandedChecklistId === item.id ? 'expanded' : ''}`}>
+                  <div className="checklist-item-header">
+                    <input
+                      type="checkbox"
+                      checked={item.completed}
+                      onChange={() => handleToggleChecklistItem(item.id)}
+                      className="checklist-checkbox"
+                    />
+                    <span className="checklist-icon">{item.icon}</span>
+                    <span className="checklist-text">{item.name}</span>
+                    <button
+                      onClick={() => handleToggleExpand(item.id)}
+                      className="checklist-expand-btn"
+                      title="Add notes"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteChecklistItem(item.id)}
+                      className="checklist-delete-btn"
+                      title="Delete this checklist item"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  {expandedChecklistId === item.id && (
+                    <div className="checklist-notes-wrapper">
+                      <textarea
+                        className="checklist-notes-input"
+                        placeholder="Add notes, reminders, or details..."
+                        value={item.note || ''}
+                        onChange={(e) => handleUpdateNote(item.id, e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Add Checklist Modal */}
+      {showAddChecklistModal && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Add Checklist Item</h3>
+              <button className="modal-close" onClick={handleCloseModal}>✕</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-group">
+                <label htmlFor="checklist-name">Item Name</label>
+                <input
+                  type="text"
+                  id="checklist-name"
+                  name="name"
+                  placeholder="Enter checklist item name"
+                  value={checklistForm.name}
+                  onChange={handleFormChange}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Select Icon</label>
+                <div className="icon-picker">
+                  {iconOptions.map(icon => (
+                    <button
+                      key={icon}
+                      className={`icon-option ${checklistForm.icon === icon ? 'selected' : ''}`}
+                      onClick={() => handleIconSelect(icon)}
+                      title={`Select ${icon}`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button onClick={handleCloseModal} className="btn-cancel">Cancel</button>
+                <button onClick={handleAddChecklist} className="btn-add">Add Item</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Next Badge Hint - Moved below both sections */}
+      {nextBadge && (
+        <div className="next-badge-hint">
+          <span className="hint-icon">🎯</span>
+          <span className="hint-text">
+            Next: {nextBadge.name} - {nextBadge.description}
+          </span>
+        </div>
+      )}
 
       {/* AI Assistant Button */}
       <button onClick={onToggleAI} className="ai-toggle-btn">
