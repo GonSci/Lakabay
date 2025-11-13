@@ -18,6 +18,7 @@ function App() {
     wantToGo: []
   });
   const [showAIChat, setShowAIChat] = useState(false);
+  const [focusLocation, setFocusLocation] = useState(null);
 
   const handleLocationClick = (location) => {
     setSelectedLocation(location);
@@ -69,6 +70,14 @@ function App() {
     setShowAIChat(!showAIChat);
   };
 
+  const handleViewOnMap = (location) => {
+    setCurrentPage('map');
+    setFocusLocation(location);
+    setShowModal(false);
+    // Clear focus after animation
+    setTimeout(() => setFocusLocation(null), 3000);
+  };
+
   return (
     <div className="App">
       <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
@@ -89,6 +98,7 @@ function App() {
                 <PhilippinesMap
                   onLocationClick={handleLocationClick}
                   userProfile={userProfile}
+                  focusLocation={focusLocation}
                 />
               </div>
             </div>

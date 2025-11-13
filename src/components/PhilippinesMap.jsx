@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import './PhilippinesMap.css';
 import philippinesData from '../data/philippines_locations.json';
 
-const PhilippinesMap = ({ onLocationClick, userProfile }) => {
+const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
+  const featureMarkersRef = useRef([]);
   const routingControlRef = useRef(null);
   const startMarkerRef = useRef(null);
   const endMarkerRef = useRef(null);
@@ -21,6 +22,7 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [transportMode, setTransportMode] = useState('driving'); // driving, walking, cycling, transit
   const [routeDetails, setRouteDetails] = useState(null);
+  const [showFeatures, setShowFeatures] = useState(true);
 
   useEffect(() => {
     // Load Leaflet CSS
@@ -290,6 +292,183 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
     });
 
   }, [mapLoaded, onLocationClick]);
+
+  // Focus on a specific location when requested
+  useEffect(() => {
+    if (focusLocation && mapInstanceRef.current && window.L) {
+      // Clear existing feature markers
+      featureMarkersRef.current.forEach(marker => marker.remove());
+      featureMarkersRef.current = [];
+      
+      // Zoom to location
+      mapInstanceRef.current.setView([focusLocation.lat, focusLocation.lng], 13, {
+        animate: true,
+        duration: 1
+      });
+      
+      // Add a pulsing marker for the focused location
+      const focusIcon = window.L.divIcon({
+        className: 'custom-marker',
+        html: `
+          <div style="
+            background-color: #ef4444;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            cursor: pointer;
+            animation: pulseGlow 2s ease-in-out infinite;
+          ">
+            📍
+          </div>
+          <style>
+            @keyframes pulseGlow {
+              0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+              }
+              50% { 
+                transform: scale(1.15);
+                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.8);
+              }
+            }
+          </style>
+        `,
+        iconSize: [50, 50],
+        iconAnchor: [25, 25],
+      });
+      
+      const focusMarker = window.L.marker([focusLocation.lat, focusLocation.lng], { icon: focusIcon })
+        .addTo(mapInstanceRef.current)
+        .bindPopup(`
+          <div style="text-align: center; min-width: 200px;">
+            <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 1.1rem;">📍 ${focusLocation.name}</h3>
+            <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 0.9rem;">${focusLocation.region}</p>
+            <p style="margin: 0; color: #ef4444; font-size: 0.85rem; font-weight: 600;">📌 You are here!</p>
+          </div>
+        `)
+        .openPopup();
+      
+      featureMarkersRef.current.push(focusMarker);
+    }
+  }, [focusLocation]);
+
+  // Add feature markers for activities, places, and food
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L) return;
+    
+    // Clear existing feature markers
+    featureMarkersRef.current.forEach(marker => marker.remove());
+    featureMarkersRef.current = [];
+    
+    // If features are hidden, don't add any markers
+    if (!showFeatures) return;
+    
+    // Featured locations with their categories
+    const featuredLocations = [
+      // Manila features
+      { lat: 14.5907, lng: 120.9735, type: 'place', name: 'Intramuros', city: 'Manila', icon: '🏰' },
+      { lat: 14.5831, lng: 120.9813, type: 'place', name: 'National Museum', city: 'Manila', icon: '🏛️' },
+      { lat: 14.5547, lng: 121.0244, type: 'place', name: 'Ayala Museum', city: 'Manila', icon: '🎨' },
+      { lat: 14.5897, lng: 120.9745, type: 'food', name: 'Barbara\'s Restaurant', city: 'Manila', icon: '🍽️' },
+      { lat: 14.5350, lng: 121.0500, type: 'activity', name: 'Manila Bay Cruise', city: 'Manila', icon: '⛵' },
+      
+      // Cebu features
+      { lat: 10.2930, lng: 123.9020, type: 'place', name: 'Magellan\'s Cross', city: 'Cebu', icon: '✝️' },
+      { lat: 10.2950, lng: 123.9000, type: 'place', name: 'Basilica del Santo Niño', city: 'Cebu', icon: '⛪' },
+      { lat: 9.8500, lng: 123.4000, type: 'activity', name: 'Oslob Whale Sharks', city: 'Cebu', icon: '🦈' },
+      { lat: 9.9400, lng: 123.3900, type: 'activity', name: 'Kawasan Falls', city: 'Cebu', icon: '🏞️' },
+      { lat: 10.3100, lng: 123.8900, type: 'food', name: 'Zubuchon', city: 'Cebu', icon: '🍖' },
+      
+      // Boracay features
+      { lat: 11.9670, lng: 121.9240, type: 'place', name: 'White Beach', city: 'Boracay', icon: '🏖️' },
+      { lat: 11.9945, lng: 121.9178, type: 'place', name: 'Puka Beach', city: 'Boracay', icon: '🐚' },
+      { lat: 11.9680, lng: 121.9250, type: 'activity', name: 'Sunset Sailing', city: 'Boracay', icon: '⛵' },
+      { lat: 11.9665, lng: 121.9260, type: 'food', name: 'Jonah\'s Fruit Shake', city: 'Boracay', icon: '🥤' },
+      
+      // Palawan features
+      { lat: 11.2050, lng: 119.4100, type: 'place', name: 'Big Lagoon', city: 'Palawan', icon: '💧' },
+      { lat: 11.2588, lng: 119.4949, type: 'place', name: 'Nacpan Beach', city: 'Palawan', icon: '🏝️' },
+      { lat: 10.3670, lng: 119.0830, type: 'activity', name: 'Underground River', city: 'Palawan', icon: '🦇' },
+      { lat: 11.1950, lng: 119.4020, type: 'food', name: 'Artcafe', city: 'Palawan', icon: '🍽️' },
+      
+      // Baguio features
+      { lat: 16.4120, lng: 120.5930, type: 'place', name: 'Burnham Park', city: 'Baguio', icon: '🌳' },
+      { lat: 16.4050, lng: 120.5900, type: 'place', name: 'Session Road', city: 'Baguio', icon: '🛍️' },
+      { lat: 16.3980, lng: 120.5600, type: 'activity', name: 'Strawberry Picking', city: 'Baguio', icon: '🍓' },
+      { lat: 16.4023, lng: 120.5960, type: 'food', name: 'Good Shepherd', city: 'Baguio', icon: '🫙' },
+    ];
+    
+    // Add markers for each featured location
+    featuredLocations.forEach((feature) => {
+      // Choose color based on type
+      let bgColor, label;
+      if (feature.type === 'activity') {
+        bgColor = '#3b82f6'; // Blue
+        label = 'Activity';
+      } else if (feature.type === 'place') {
+        bgColor = '#8b5cf6'; // Purple
+        label = 'Place';
+      } else {
+        bgColor = '#f59e0b'; // Orange
+        label = 'Food';
+      }
+      
+      const featureIcon = window.L.divIcon({
+        className: 'feature-marker',
+        html: `
+          <div style="
+            background: ${bgColor};
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          "
+          onmouseover="this.style.transform='scale(1.2)'"
+          onmouseout="this.style.transform='scale(1)'">
+            ${feature.icon}
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+      });
+      
+      const marker = window.L.marker([feature.lat, feature.lng], { icon: featureIcon })
+        .addTo(mapInstanceRef.current)
+        .bindPopup(`
+          <div style="text-align: center; min-width: 160px;">
+            <div style="
+              display: inline-block;
+              background: ${bgColor};
+              color: white;
+              padding: 4px 10px;
+              border-radius: 12px;
+              font-size: 0.7rem;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 8px;
+            ">${label}</div>
+            <h4 style="margin: 0 0 4px 0; color: #1f2937; font-size: 0.95rem;">${feature.icon} ${feature.name}</h4>
+            <p style="margin: 0; color: #6b7280; font-size: 0.8rem;">📍 ${feature.city}</p>
+          </div>
+        `);
+      
+      featureMarkersRef.current.push(marker);
+    });
+  }, [mapInstanceRef.current, window.L, showFeatures]);
 
   // Update marker colors when user profile changes
   useEffect(() => {
@@ -1040,31 +1219,56 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
       </div>
 
       <div className="map-header">
-        <h2 className="map-title">🗺️ Explore the Philippines</h2>
-        <p className="map-instruction">
-          <strong>💡 Tip:</strong> {routingMode 
-            ? 'Enter addresses to calculate your route and travel time!' 
-            : 'Click anywhere on the map to discover that area! Or click the colored markers (⭐) for featured destinations.'}
-        </p>
+        <div className="map-header-content">
+          <div className="map-title-section">
+            <h2 className="map-title">🗺️ Explore the Philippines</h2>
+            <p className="map-instruction">
+              <strong>💡 Tip:</strong> {routingMode 
+                ? 'Enter addresses to calculate your route and travel time!' 
+                : 'Click anywhere on the map to discover that area! Or click the colored markers (⭐) for featured destinations.'}
+            </p>
+          </div>
+        </div>
       </div>
       
       <div className="map-legend">
-        <div className="legend-item">
-          <span className="legend-color" style={{ background: '#3b82f6' }}>📍</span>
-          <span>Unvisited</span>
+        <div className="legend-section">
+          <h4 className="legend-heading">Main Destinations</h4>
+          <div className="legend-items">
+            <div className="legend-item">
+              <span className="legend-color" style={{ background: '#3b82f6' }}>📍</span>
+              <span>Unvisited</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color" style={{ background: '#10b981' }}>📍</span>
+              <span>Been There</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color" style={{ background: '#f59e0b' }}>📍</span>
+              <span>Want to Go</span>
+            </div>
+          </div>
         </div>
-        <div className="legend-item">
-          <span className="legend-color" style={{ background: '#10b981' }}>📍</span>
-          <span>Been There</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-color" style={{ background: '#f59e0b' }}>📍</span>
-          <span>Want to Go</span>
-        </div>
-        <div className="legend-item">
-          <span className="legend-color" style={{ background: '#8b5cf6' }}>🔍</span>
-          <span>Exploring</span>
-        </div>
+        
+        {showFeatures && (
+          <div className="legend-section">
+            <h4 className="legend-heading">Featured</h4>
+            <div className="legend-items">
+              <div className="legend-item">
+                <span className="legend-color" style={{ background: '#3b82f6' }}>🎯</span>
+                <span>Activities</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color" style={{ background: '#8b5cf6' }}>�</span>
+                <span>Places</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-color" style={{ background: '#f59e0b' }}>🍴</span>
+                <span>Food</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div 
@@ -1078,6 +1282,15 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
           </div>
         )}
       </div>
+
+      {/* Toggle Features Button - Positioned over map */}
+      <button 
+        className={`toggle-features-btn-map ${showFeatures ? 'active' : ''}`}
+        onClick={() => setShowFeatures(!showFeatures)}
+        title={showFeatures ? 'Hide featured places' : 'Show featured places'}
+      >
+        {showFeatures ? '👁️ Hide Featured' : '👁️‍🗨️ Show Featured'}
+      </button>
     </div>
   );
 };
