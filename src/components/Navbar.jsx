@@ -1,7 +1,8 @@
 import React from 'react';
 import './Navbar.css';
+import LoginButton from './LoginButton'; // New import para sa login button
 
-const Navbar = ({ currentPage, onNavigate }) => {
+const Navbar = ({ currentPage, onNavigate, currentUser }) => { // Added currentUser prop
   const menuItems = [
     { id: 'map', label: ' Interactive Map', icon: '🗺️' },
     { id: 'explore', label: ' Explore', icon: '🌴' },
@@ -28,6 +29,10 @@ const Navbar = ({ currentPage, onNavigate }) => {
               <span className="nav-label">{item.label}</span>
             </button>
           ))}
+        </div>
+        
+        <div className="nav-auth">
+          <LoginButton currentUser={currentUser} />
         </div>
       </div>
     </nav>

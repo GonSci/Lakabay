@@ -77,6 +77,31 @@
   font-size: 14px;
 }
 
+.nav-auth {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .nav-menu {
+    order: 2;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .nav-auth {
+    order: 1;
+    margin-left: auto;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .navbar-container {
