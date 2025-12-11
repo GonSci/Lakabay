@@ -1,43 +1,26 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import './UserProfile.css';
+import { db } from '../firebase'; 
+import { doc, setDoc } from 'firebase/firestore';
 
-const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = false }) => {
+const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = false, currentUser }) => { //NEW: Added currentUser prop
   const [showAddChecklistModal, setShowAddChecklistModal] = useState(false);
   const [checklistForm, setChecklistForm] = useState({ name: '', icon: '✓' });
   const [expandedChecklistId, setExpandedChecklistId] = useState(null);
-  const [userChecklists, setUserChecklists] = useState(() => {
-    // Initialize state from localStorage immediately
-    try {
-      const saved = localStorage.getItem('userChecklists');
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error('Error loading checklists:', error);
-      return [];
-    }
-  });
+  
+  //MODIFIED: Initialize from profile prop instead of localStorage
+  const [userChecklists, setUserChecklists] = useState(profile.checklists || []);
   
   // State for save/load checklist templates
   const [showSaveChecklistModal, setShowSaveChecklistModal] = useState(false);
   const [saveChecklistName, setSaveChecklistName] = useState('');
-  const [savedChecklistTemplates, setSavedChecklistTemplates] = useState(() => {
-    try {
-      const saved = localStorage.getItem('savedChecklistTemplates');
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error('Error loading saved templates:', error);
-      return [];
-    }
-  });
+  
+  //MODIFIED: Initialize from profile prop instead of localStorage
+  const [savedChecklistTemplates, setSavedChecklistTemplates] = useState(profile.savedTemplates || []);
   
   // Track the last loaded preloaded template ID (for replacing logic)
-  const [lastPreloadedTemplateId, setLastPreloadedTemplateId] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lastPreloadedTemplateId');
-      return saved ? saved : null;
-    } catch (error) {
-      return null;
-    }
-  });
+  // MODIFIED: Initialize from profile prop instead of localStorage
+  const [lastPreloadedTemplateId, setLastPreloadedTemplateId] = useState(profile.lastPreloadedTemplateId || null);
 
   // Preloaded templates for different occasions
   const preloadedTemplates = [
@@ -127,33 +110,100 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     }
   ];
 
-  // Save checklists to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('userChecklists', JSON.stringify(userChecklists));
-    console.log('Checklists saved:', userChecklists);
-    console.log('LocalStorage content:', localStorage.getItem('userChecklists'));
-  }, [userChecklists]);
-
-  // Save templates to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('savedChecklistTemplates', JSON.stringify(savedChecklistTemplates));
-    console.log('Templates saved:', savedChecklistTemplates);
-  }, [savedChecklistTemplates]);
-
-  // Save last preloaded template ID to localStorage
-  useEffect(() => {
-    if (lastPreloadedTemplateId) {
-      localStorage.setItem('lastPreloadedTemplateId', lastPreloadedTemplateId);
+  // Save checklists to Firebase
+  const saveChecklistsToFirebase = useCallback(async (checklists) => {
+    if (!currentUser) {
+      console.log('⚠️ No user logged in, checklists not saved');
+      return;
     }
-  }, [lastPreloadedTemplateId]);
+
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userDocRef, {
+        checklists: checklists,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log('✅ Checklists saved to Firebase:', checklists.length, 'items');
+    } catch (error) {
+      console.error('❌ Error saving checklists:', error);
+      console.error('Error details:', error.message);
+    }
+  }, [currentUser]);
+
+  // Save templates to Firebase
+  const saveTemplatesToFirebase = useCallback(async (templates) => {
+    if (!currentUser) return;
+
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userDocRef, {
+        savedTemplates: templates,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log('✅ Templates saved to Firebase:', templates.length, 'items');
+    } catch (error) {
+      console.error('❌ Error saving templates:', error);
+      console.error('Error details:', error.message);
+    }
+  }, [currentUser]);
+
+  // Save last preloaded template ID to Firebase
+  const saveLastPreloadedIdToFirebase = useCallback(async (templateId) => {
+    if (!currentUser) return;
+
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userDocRef, {
+        lastPreloadedTemplateId: templateId,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log('✅ Last preloaded template ID saved:', templateId);
+    } catch (error) {
+      console.error('❌ Error saving last preloaded ID:', error);
+      console.error('Error details:', error.message);
+    }
+  }, [currentUser]);
+
+
+
+  // Save to Firebase when checklists change
+  useEffect(() => {
+    if (currentUser && userChecklists.length > 0) {
+      saveChecklistsToFirebase(userChecklists);
+    }
+  }, [userChecklists, currentUser, saveChecklistsToFirebase]);
+
+  // Save to Firebase when templates change
+  useEffect(() => {
+    if (currentUser && savedChecklistTemplates.length > 0) {
+      saveTemplatesToFirebase(savedChecklistTemplates);
+    }
+  }, [savedChecklistTemplates, currentUser, saveTemplatesToFirebase]);
+
+  // Save to Firebase when last preloaded ID changes
+  useEffect(() => {
+    if (currentUser && lastPreloadedTemplateId) {
+      saveLastPreloadedIdToFirebase(lastPreloadedTemplateId);
+    }
+  }, [lastPreloadedTemplateId, currentUser, saveLastPreloadedIdToFirebase]);
+
+  //NEW: Sync state when profile prop changes (user logs in/out or data updates)
+  useEffect(() => {
+    setUserChecklists(profile.checklists || []);
+    setSavedChecklistTemplates(profile.savedTemplates || []);
+    setLastPreloadedTemplateId(profile.lastPreloadedTemplateId || null);
+  }, [profile]); //NEW: This entire useEffect is new
 
   // Calculate gamification stats
   const stats = useMemo(() => {
-    const visitedCount = profile.beenThere.length;
-    const wishlistCount = profile.wantToGo.length;
+    const beenThere = profile.beenThere || [];
+    const wantToGo = profile.wantToGo || [];
+
+    const visitedCount = beenThere.length;
+    const wishlistCount = wantToGo.length;
     
     // Extract unique regions from visited places
-    const uniqueRegions = new Set(profile.beenThere.map(id => {
+    const uniqueRegions = new Set(beenThere.map(id => {
       // Extract region from location id (assuming format like "boracay-aklan")
       const parts = id.split('-');
       return parts[parts.length - 1];
@@ -269,7 +319,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
       });
       // Clear preloaded template tracking so next template appends instead
       setLastPreloadedTemplateId(null);
-      localStorage.removeItem('lastPreloadedTemplateId');
+      // ⭐ REMOVED: localStorage.removeItem('lastPreloadedTemplateId'); (Firebase handles this now)
       handleCloseModal();
     }
   };
@@ -674,7 +724,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
       <div className="profile-section places-section">
         <h4>✅ Places Visited</h4>
         <div className="location-list">
-          {profile.beenThere.length === 0 ? (
+          {(!profile.beenThere || profile.beenThere.length === 0) ? (
             <p className="empty-state">Start your journey!</p>
           ) : (
             profile.beenThere.map((locationId) => (
@@ -690,7 +740,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
       <div className="profile-section places-section">
         <h4>⭐ Bucket List</h4>
         <div className="location-list">
-          {profile.wantToGo.length === 0 ? (
+          {(!profile.wantToGo || profile.wantToGo.length === 0) ? (
             <p className="empty-state">Add places to explore</p>
           ) : (
             profile.wantToGo.map((locationId) => (

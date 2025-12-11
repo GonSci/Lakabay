@@ -49,7 +49,7 @@ function LoginButton({ currentUser }) {
             ) : (
                 // Show if the user is not logged in
                 <button onClick={handleLogin} className="login-btn">
-                    <span className="google-icon">🔐</span>
+                    <span className="google-icon"></span>
                     Login with Google
                 </button>
             )}
