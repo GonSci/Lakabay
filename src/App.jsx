@@ -183,7 +183,14 @@ function App() {
   if (loading) {
     return (
       <div className="App loading-screen">
-        <div>Loading...</div>
+        <div className="plane-icon">✈️</div>
+        <div className="app-title">Landscapes</div>
+        <div className="loading-text">Loading your travel journey...</div>
+        <div className="loading-dots">
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+        </div>
       </div>
     );
   }

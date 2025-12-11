@@ -254,3 +254,77 @@
     font-size: 20px;
   }
 }
+
+/* Loading Screen Styles */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.loading-screen .plane-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  animation: bounce 1s infinite;
+}
+
+.loading-screen .app-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.loading-screen .loading-text {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.loading-screen .loading-dots {
+  margin-top: 30px;
+  display: flex;
+  gap: 8px;
+}
+
+.loading-screen .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.loading-screen .dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-screen .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-screen .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(-20px); 
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    opacity: 0.3; 
+    transform: scale(0.8); 
+  }
+  50% { 
+    opacity: 1; 
+    transform: scale(1.2); 
+  }
+}

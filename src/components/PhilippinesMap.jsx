@@ -508,9 +508,9 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
   }, [userProfile]);
 
   const getLocationColor = (locationId) => {
-    if (userProfile.beenThere.includes(locationId)) {
+    if (userProfile.beenThere && userProfile.beenThere.includes(locationId)) {
       return '#10b981'; // Green - Been there
-    } else if (userProfile.wantToGo.includes(locationId)) {
+    } else if (userProfile.wantToGo && userProfile.wantToGo.includes(locationId)) {
       return '#f59e0b'; // Orange - Want to go
     }
     return '#3b82f6'; // Blue - Default

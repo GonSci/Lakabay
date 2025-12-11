@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import './UserProfile.css';
 import { db } from '../firebase'; 
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = false, currentUser }) => { //NEW: Added currentUser prop
   const [showAddChecklistModal, setShowAddChecklistModal] = useState(false);
@@ -110,72 +110,82 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     }
   ];
 
-  // NEW FUNCTION: Save checklists to Firebase
-  const saveChecklistsToFirebase = async (checklists) => {
-    if (currentUser) {
-      try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userDocRef, {
-          checklists: checklists,
-          updatedAt: new Date().toISOString()
-        });
-        console.log('✅ Checklists saved to Firebase');
-      } catch (error) {
-        console.error('❌ Error saving checklists:', error);
-      }
-    } else {
+  // Save checklists to Firebase
+  const saveChecklistsToFirebase = useCallback(async (checklists) => {
+    if (!currentUser) {
       console.log('⚠️ No user logged in, checklists not saved');
+      return;
     }
-  };
 
-  // NEW FUNCTION: Save templates to Firebase
-  const saveTemplatesToFirebase = async (templates) => {
-    if (currentUser) {
-      try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userDocRef, {
-          savedTemplates: templates,
-          updatedAt: new Date().toISOString()
-        });
-        console.log('✅ Templates saved to Firebase');
-      } catch (error) {
-        console.error('❌ Error saving templates:', error);
-      }
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userDocRef, {
+        checklists: checklists,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log('✅ Checklists saved to Firebase:', checklists.length, 'items');
+    } catch (error) {
+      console.error('❌ Error saving checklists:', error);
+      console.error('Error details:', error.message);
     }
-  };
+  }, [currentUser]);
 
-  // NEW FUNCTION: Save last preloaded template ID to Firebase
-  const saveLastPreloadedIdToFirebase = async (templateId) => {
-    if (currentUser) {
-      try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userDocRef, {
-          lastPreloadedTemplateId: templateId,
-          updatedAt: new Date().toISOString()
-        });
-        console.log('✅ Last preloaded template ID saved');
-      } catch (error) {
-        console.error('❌ Error saving last preloaded ID:', error);
-      }
+  // Save templates to Firebase
+  const saveTemplatesToFirebase = useCallback(async (templates) => {
+    if (!currentUser) return;
+
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userDocRef, {
+        savedTemplates: templates,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log('✅ Templates saved to Firebase:', templates.length, 'items');
+    } catch (error) {
+      console.error('❌ Error saving templates:', error);
+      console.error('Error details:', error.message);
     }
-  };
+  }, [currentUser]);
 
-  // MODIFIED: Save to Firebase when checklists change (removed localStorage)
-  useEffect(() => {
-    saveChecklistsToFirebase(userChecklists);
-  }, [userChecklists, currentUser]); //ADDED: currentUser dependency
+  // Save last preloaded template ID to Firebase
+  const saveLastPreloadedIdToFirebase = useCallback(async (templateId) => {
+    if (!currentUser) return;
 
-  // MODIFIED: Save to Firebase when templates change (removed localStorage)
-  useEffect(() => {
-    saveTemplatesToFirebase(savedChecklistTemplates);
-  }, [savedChecklistTemplates, currentUser]); //ADDED: currentUser dependency
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userDocRef, {
+        lastPreloadedTemplateId: templateId,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log('✅ Last preloaded template ID saved:', templateId);
+    } catch (error) {
+      console.error('❌ Error saving last preloaded ID:', error);
+      console.error('Error details:', error.message);
+    }
+  }, [currentUser]);
 
-  // MODIFIED: Save to Firebase when last preloaded ID changes (removed localStorage)
+
+
+  // Save to Firebase when checklists change
   useEffect(() => {
-    if (lastPreloadedTemplateId) {
+    if (currentUser && userChecklists.length > 0) {
+      saveChecklistsToFirebase(userChecklists);
+    }
+  }, [userChecklists, currentUser, saveChecklistsToFirebase]);
+
+  // Save to Firebase when templates change
+  useEffect(() => {
+    if (currentUser && savedChecklistTemplates.length > 0) {
+      saveTemplatesToFirebase(savedChecklistTemplates);
+    }
+  }, [savedChecklistTemplates, currentUser, saveTemplatesToFirebase]);
+
+  // Save to Firebase when last preloaded ID changes
+  useEffect(() => {
+    if (currentUser && lastPreloadedTemplateId) {
       saveLastPreloadedIdToFirebase(lastPreloadedTemplateId);
     }
-  }, [lastPreloadedTemplateId, currentUser]); //ADDED: currentUser dependency
+  }, [lastPreloadedTemplateId, currentUser, saveLastPreloadedIdToFirebase]);
 
   //NEW: Sync state when profile prop changes (user logs in/out or data updates)
   useEffect(() => {
@@ -186,11 +196,14 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
   // Calculate gamification stats
   const stats = useMemo(() => {
-    const visitedCount = profile.beenThere.length;
-    const wishlistCount = profile.wantToGo.length;
+    const beenThere = profile.beenThere || [];
+    const wantToGo = profile.wantToGo || [];
+
+    const visitedCount = beenThere.length;
+    const wishlistCount = wantToGo.length;
     
     // Extract unique regions from visited places
-    const uniqueRegions = new Set(profile.beenThere.map(id => {
+    const uniqueRegions = new Set(beenThere.map(id => {
       // Extract region from location id (assuming format like "boracay-aklan")
       const parts = id.split('-');
       return parts[parts.length - 1];
@@ -711,7 +724,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
       <div className="profile-section places-section">
         <h4>✅ Places Visited</h4>
         <div className="location-list">
-          {profile.beenThere.length === 0 ? (
+          {(!profile.beenThere || profile.beenThere.length === 0) ? (
             <p className="empty-state">Start your journey!</p>
           ) : (
             profile.beenThere.map((locationId) => (
@@ -727,7 +740,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
       <div className="profile-section places-section">
         <h4>⭐ Bucket List</h4>
         <div className="location-list">
-          {profile.wantToGo.length === 0 ? (
+          {(!profile.wantToGo || profile.wantToGo.length === 0) ? (
             <p className="empty-state">Add places to explore</p>
           ) : (
             profile.wantToGo.map((locationId) => (
