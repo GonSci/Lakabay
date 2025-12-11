@@ -72,12 +72,10 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
 
   // Modal close handler - return focus to button
   const handleCloseModal = () => {
-    console.log('handleCloseModal called, hideHeader:', hideHeader, 'onClose:', !!onClose);
     setIsModalOpen(false);
     resetForm();
     // Always call parent's onClose callback if provided
     if (onClose) {
-      console.log('Calling onClose callback');
       onClose();
     }
     if (createButtonRef.current && !hideHeader) {
@@ -85,27 +83,30 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
     }
   };
 
-  // Handle ESC key to close modal
+  // Consolidated effect for keyboard and modal focus handling
   useEffect(() => {
+    if (!isModalOpen && !hideHeader) return;
+
+    // Handle ESC key to close modal
     const handleEscape = (e) => {
-      if (e.key === 'Escape' && isModalOpen) {
+      if (e.key === 'Escape') {
         handleCloseModal();
       }
     };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isModalOpen]);
 
-  // Focus on name input when modal opens
-  useEffect(() => {
-    if (isModalOpen) {
-      setTimeout(() => {
-        if (nameInputRef.current) {
-          nameInputRef.current.focus();
-        }
-      }, 100);
-    }
-  }, [isModalOpen]);
+    // Focus on name input when modal opens
+    const focusTimer = setTimeout(() => {
+      if (nameInputRef.current) {
+        nameInputRef.current.focus();
+      }
+    }, 100);
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      clearTimeout(focusTimer);
+    };
+  }, [isModalOpen, hideHeader]);
 
   // Handle click outside modal
   const handleBackdropClick = (e) => {
@@ -197,14 +198,12 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
         URL.revokeObjectURL(imagePreviewUrl);
       }
 
-      // Create new preview
+      // Create new preview and update both states together
       const previewUrl = URL.createObjectURL(file);
       setImagePreviewUrl(previewUrl);
       setImageFile(file);
-      setErrors(prev => ({
-        ...prev,
-        image: ''
-      }));
+      // Only update error if there was one
+      setErrors(prev => prev.image ? { ...prev, image: '' } : prev);
       
       // Reset file input
       e.target.value = '';
@@ -338,8 +337,8 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
               <h2 id="campaign-modal-title">Create Marketing Campaign</h2>
               <button
                 className="campaign-modal-close"
-                onClick={(e) => { console.log('X button clicked'); e.stopPropagation(); handleCloseModal(); }}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { console.log('X button key pressed'); e.preventDefault(); e.stopPropagation(); handleCloseModal(); } }}
+                onClick={(e) => { e.stopPropagation(); handleCloseModal(); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleCloseModal(); } }}
                 aria-label="Close dialog"
                 type="button"
               >
@@ -531,8 +530,8 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
                 <div className="form-actions">
                   <button
                     type="button"
-                    onClick={(e) => { console.log('Cancel button clicked'); e.preventDefault(); e.stopPropagation(); handleCloseModal(); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { console.log('Cancel button key pressed'); e.preventDefault(); e.stopPropagation(); handleCloseModal(); } }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCloseModal(); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleCloseModal(); } }}
                     className="cancel-btn"
                   >
                     Cancel

@@ -58,16 +58,16 @@
   font-weight: 700;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   margin-top: 8px;
+  will-change: transform, box-shadow;
 }
 
 .create-campaign-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  background: #f8fafc;
 }
 
 .create-campaign-btn:active {
@@ -92,13 +92,12 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
   padding: 20px;
-  animation: fadeInOverlay 0.3s ease-in;
+  animation: fadeInOverlay 0.2s ease-in;
 }
 
 @keyframes fadeInOverlay {
@@ -171,7 +170,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  cursor: pointer;
 }
 
 .campaign-modal-close:hover {
@@ -226,7 +226,7 @@
   padding: 12px 14px;
   font-size: 14px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   background: white;
   color: #1a365d;
 }
@@ -358,7 +358,7 @@
   font-weight: 600;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
   z-index: 10;
   white-space: nowrap;
   margin: 8px;
@@ -366,6 +366,7 @@
   align-items: center;
   justify-content: center;
   min-width: fit-content;
+  will-change: transform, background-color;
 }
 
 .remove-image-btn:hover {
@@ -504,8 +505,9 @@
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  will-change: background-color, box-shadow;
 }
 
 .cancel-btn {
