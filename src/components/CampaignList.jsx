@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './CampaignList.css';
-import ConfirmationModal from './ConfirmationModal';
+import ConfirmationModal from './modals/ConfirmationModal';
+import EditCampaignModal from './modals/EditCampaignModal';
 
 /**
  * CampaignList Component
@@ -21,6 +22,8 @@ import ConfirmationModal from './ConfirmationModal';
  *         createdAt: ISO string
  *       }
  *   - onCreate: function called when "Create Campaign" button is clicked
+ *   - onDelete: function called when delete is confirmed
+ *   - onUpdate: async function(campaignId, updatedData) => void for updating campaigns
  *
  * Features:
  *   - Responsive grid layout (1-3 columns based on screen size)
@@ -65,10 +68,11 @@ const DeleteIcon = () => (
   </svg>
 );
 
-const CampaignList = ({ campaigns, onCreate, onDelete }) => {
+const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate }) => {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, campaignId: null });
+  const [editingCampaign, setEditingCampaign] = useState(null);
 
   // If campaigns is empty or not provided, return null
   if (!campaigns || campaigns.length === 0) {
@@ -142,9 +146,8 @@ const CampaignList = ({ campaigns, onCreate, onDelete }) => {
 
   const handleEditCampaign = (campaign, e) => {
     e.stopPropagation();
-    console.log('Edit campaign:', campaign);
+    setEditingCampaign(campaign);
     setOpenMenuId(null);
-    // TODO: Open edit modal with campaign data
   };
 
   const handleDeleteCampaign = (campaignId, e) => {
@@ -434,6 +437,14 @@ const CampaignList = ({ campaigns, onCreate, onDelete }) => {
         confirmButtonType="danger"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      {/* Edit Campaign Modal */}
+      <EditCampaignModal
+        campaign={editingCampaign}
+        isOpen={!!editingCampaign}
+        onClose={() => setEditingCampaign(null)}
+        onUpdate={onUpdate}
       />
     </div>
   );

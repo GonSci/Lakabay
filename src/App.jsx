@@ -38,7 +38,7 @@ function App() {
   const [loading, setLoading] = useState(true); // Loading state lang to while checing Auth status
 
   // --> Dito ko na ilalagay yung useEffect para sa user login/logout tracking <-- //
-     // Nag rurun to as soon as the app loads, tinatrack nito yung login/logout, if user is logs in niloload nito yung firebase profile nila. If no profile exists, create.
+  // Nag rurun to as soon as the app loads, tinatrack nito yung login/logout, if user is logs in niloload nito yung firebase profile nila. If no profile exists, create.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
@@ -118,7 +118,11 @@ function App() {
     }
   };
 
-  // --> Fetch campaigns from localStorage <-- //
+  /* ========================================================================
+    CAMPAIGN IMPLEMENTATION (implement na lang sa DB pag tapos na)
+     ========================================================================
+  */
+  //Fetch campaigns from localStorage
   const fetchCampaigns = () => {
     try {
       const savedCampaigns = localStorage.getItem('campaigns');
@@ -230,6 +234,82 @@ function App() {
       console.error('Error deleting campaign from localStorage:', error);
       return false;
     }
+  };
+
+  // Update campaign in localStorage
+  const updateCampaignInStorage = (campaignId, updatedData) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const savedCampaigns = localStorage.getItem('campaigns');
+        let campaigns = savedCampaigns ? JSON.parse(savedCampaigns) : [];
+        
+        // Find the campaign to update
+        const campaignIndex = campaigns.findIndex(campaign => campaign.id === campaignId);
+        if (campaignIndex === -1) {
+          reject(new Error('Campaign not found'));
+          return;
+        }
+
+        const currentCampaign = campaigns[campaignIndex];
+
+        // If there's a new image file, convert it to base64
+        if (updatedData.imageFile) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const imageBase64 = e.target.result;
+              
+              // Update campaign with new data
+              campaigns[campaignIndex] = {
+                ...currentCampaign,
+                name: updatedData.name,
+                description: updatedData.description,
+                imageUrl: imageBase64,
+                platform: updatedData.platform,
+                total_payout: updatedData.budget,
+                rpm: updatedData.rpm,
+                updatedAt: new Date().toISOString()
+              };
+
+              // Save to localStorage
+              localStorage.setItem('campaigns', JSON.stringify(campaigns));
+              setCampaigns(campaigns);
+              console.log('Campaign updated in localStorage:', campaignId);
+              resolve(campaigns[campaignIndex]);
+            } catch (error) {
+              console.error('Error processing image:', error);
+              reject(error);
+            }
+          };
+          reader.onerror = (error) => {
+            console.error('FileReader error:', error);
+            reject(error);
+          };
+          reader.readAsDataURL(updatedData.imageFile);
+        } else {
+          // No new image file, keep existing image or use provided imageUrl
+          campaigns[campaignIndex] = {
+            ...currentCampaign,
+            name: updatedData.name,
+            description: updatedData.description,
+            imageUrl: updatedData.imageUrl !== undefined ? updatedData.imageUrl : currentCampaign.imageUrl,
+            platform: updatedData.platform,
+            total_payout: updatedData.budget,
+            rpm: updatedData.rpm,
+            updatedAt: new Date().toISOString()
+          };
+
+          // Save to localStorage
+          localStorage.setItem('campaigns', JSON.stringify(campaigns));
+          setCampaigns(campaigns);
+          console.log('Campaign updated in localStorage:', campaignId);
+          resolve(campaigns[campaignIndex]);
+        }
+      } catch (error) {
+        console.error('Error updating campaign in localStorage:', error);
+        reject(error);
+      }
+    });
   };
 
   // Load campaigns on component mount
@@ -426,6 +506,7 @@ function App() {
                 campaigns={campaigns} 
                 onCreate={() => setShowCampaignModal(true)}
                 onDelete={deleteCampaignFromStorage}
+                onUpdate={updateCampaignInStorage}
               />
             )}
           </div>
